@@ -14,6 +14,14 @@ const here = new URL(".", import.meta.url).pathname;
 const src = (p: string) => readFileSync(join(here, "..", "src", p), "utf8");
 const rust = (p: string) => readFileSync(join(here, "..", "src-tauri", "src", p), "utf8");
 
+test("withGlobalTauri is on (api.ts detects Tauri via window.__TAURI__)", () => {
+  const conf = JSON.parse(
+    readFileSync(join(here, "..", "src-tauri", "tauri.conf.json"), "utf8"),
+  );
+  assert.equal(conf.app.withGlobalTauri, true, "without it every invoke silently no-ops");
+  assert.ok(src("api.ts").includes("__TAURI__"), "api.ts relies on the injected global");
+});
+
 test("event names match the Rust constants", () => {
   const lib = rust("lib.rs");
   for (const name of Object.values(EV)) {
