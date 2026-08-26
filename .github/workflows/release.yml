@@ -55,14 +55,18 @@ jobs:
           # tar -C flags are positional: the second -C must be absolute or it
           # resolves relative to the first one.
           tar -czf linefeed-cli-macos-aarch64.tar.gz -C "$PWD/dist-cli" linefeed
-      - name: Build GUI bundle (dmg)
+      - name: Build GUI bundles (app + dmg)
         working-directory: crates/linefeed-gui
-        run: npx tauri build --bundles dmg --config '{"bundle":{"active":true}}'
-      - name: Zip the .app (drag-anywhere alternative to the dmg)
+        run: npx tauri build --bundles app,dmg --config '{"bundle":{"active":true}}'
+      - name: Collect bundles (locate outputs defensively, never hardcode)
         run: |
-          APP=$(find target/release/bundle/macos -maxdepth 1 -name "*.app" | head -1)
-          test -n "$APP"
+          echo "== everything under target/**/bundle =="
+          find target -path "*bundle*" \( -name "*.app" -o -name "*.dmg" \) -maxdepth 6 | sed 's/^/  /'
+          APP=$(find target -type d -name "*.app" -path "*bundle*" | head -1)
+          DMG=$(find target -type f -name "*.dmg" -path "*bundle*" | head -1)
+          test -n "$APP" && test -n "$DMG"
           ditto -c -k --sequesterRsrc --keepParent "$APP" linefeed.app-arm64-macos.zip
+          cp "$DMG" linefeed-arm64-macos.dmg
       - name: Upload artifacts to the draft
         uses: softprops/action-gh-release@v2
         with:
@@ -71,9 +75,9 @@ jobs:
           files: |
             linefeed-cli-macos-aarch64.tar.gz
             linefeed.app-arm64-macos.zip
-            target/release/bundle/dmg/*.dmg
+            linefeed-arm64-macos.dmg
       - name: Checksums (for packaging formulas)
-        run: shasum -a 256 linefeed-cli-macos-aarch64.tar.gz linefeed.app-arm64-macos.zip target/release/bundle/dmg/*.dmg
+        run: shasum -a 256 linefeed-cli-macos-aarch64.tar.gz linefeed.app-arm64-macos.zip linefeed-arm64-macos.dmg
 
   linux:
     needs: create-release
