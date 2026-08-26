@@ -136,6 +136,17 @@ recorded pt-BR takes (clean, noisy, ad-lib, and skip-around: final cursor
 original implementation, carrying its validated algorithm design forward
 while fixing the first version's known flaws at the architecture level.
 
+## AI-assisted development
+
+Linefeed is vibe-coded: the implementation is written by
+[Claude](https://claude.com/claude-code) (Anthropic) in AI pair-programming
+sessions, directed, reviewed, and field-tested by the human maintainer.
+Every commit carries a co-authorship trailer. Quality is gated the
+old-fashioned way — 110+ unit/contract tests, zero-warning builds across
+all feature combinations in CI, and end-to-end validation of the alignment
+core against recorded speech takes (100% final-cursor accuracy on clean,
+noisy, ad-lib, and skip-around readings).
+
 ## Acknowledgements
 
 - [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) (k2-fsa) — on-device
