@@ -68,7 +68,7 @@ fn load_script(path: &Path) -> Result<Script> {
 
 fn engine_config(opts: &EngineOpts) -> EngineConfig {
     let model_dir = opts.model_dir.clone().unwrap_or_else(|| {
-        linefeed_asr::default_model_dir(&opts.engine)
+        linefeed_asr::default_model_dir(&opts.model)
             .to_string_lossy()
             .into_owned()
     });

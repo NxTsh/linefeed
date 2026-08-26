@@ -5,10 +5,18 @@
 
 import { api, pickScript, toggleFullscreen } from "./api.ts";
 import { CONTROLS_TEMPLATE } from "./controls-template.ts";
+import { fmtMB } from "./model-fetch.ts";
 import { AUTO_HIDE_MS } from "./present.ts";
 import { READING_FONTS, MAX_LEAD_LINES } from "./pipeline.ts";
 import { zoneStep, ZONE_HEIGHT_RANGE, ZONE_STEP_PCT, ZONE_WIDTH_RANGE } from "./zone.ts";
-import type { GuiConfig, StatusPayload, TrackState } from "./types.ts";
+import type {
+  GuiConfig,
+  ModelFetchEvent,
+  ModelInfoPayload,
+  StartupInfoPayload,
+  StatusPayload,
+  TrackState,
+} from "./types.ts";
 
 export class Controls {
   private cfg: GuiConfig | null = null;
@@ -16,6 +24,8 @@ export class Controls {
   private lastActivity = 0;
   private chromeHidden = false;
   private playing = false;
+  private models: ModelInfoPayload[] = [];
+  private activeFetch: ModelFetchEvent | null = null;
 
   onOpen: (path: string) => void = () => {};
   onPresent: () => void = () => {};
@@ -42,6 +52,10 @@ export class Controls {
 
   private el<T extends HTMLElement = HTMLElement>(id: string): T {
     return this.root.querySelector(`[data-c="${id}"]`) as T;
+  }
+
+  private panel(): HTMLElement {
+    return document.getElementById("settings-panel")!;
   }
 
   private wire(): void {
@@ -92,6 +106,22 @@ export class Controls {
     this.el("fullscreen").addEventListener("click", () => void toggleFullscreen());
     this.el("present").addEventListener("click", () => this.onPresent());
     this.el("resume").addEventListener("click", () => this.onResume());
+    this.el("settings").addEventListener("click", () => this.togglePanel());
+    this.el<HTMLSelectElement>("model").addEventListener("change", (e) => {
+      void api.setModel((e.target as HTMLSelectElement).value);
+    });
+    // Download buttons are re-rendered; delegate on the stable container.
+    this.el("model-list").addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest("[data-model]");
+      if (btn) void api.downloadModel(btn.getAttribute("data-model")!);
+    });
+  }
+
+  togglePanel(open?: boolean): void {
+    const panel = this.panel();
+    const show = open ?? panel.classList.contains("hidden");
+    panel.classList.toggle("hidden", !show);
+    this.el("settings").classList.toggle("on", show);
   }
 
   /** Synchronous read-modify-write over the CACHED config — Alt+arrow key
@@ -132,12 +162,75 @@ export class Controls {
     if (sel.value !== want) sel.value = "";
   }
 
+  /** Feed the startup probe: model picker options + install states. */
+  setModels(probe: StartupInfoPayload): void {
+    this.models = probe.models;
+    const sel = this.el<HTMLSelectElement>("model");
+    sel.textContent = "";
+    for (const m of probe.models) {
+      const opt = document.createElement("option");
+      opt.value = m.id;
+      opt.textContent = m.label;
+      sel.appendChild(opt);
+    }
+    sel.value = this.cfg?.model ?? probe.model;
+    this.renderModelList();
+  }
+
+  /** Live download progress for the model rows. */
+  updateModelFetch(ev: ModelFetchEvent): void {
+    this.activeFetch = ev;
+    if (ev.phase === "ready") {
+      const m = this.models.find((m) => m.id === ev.model);
+      if (m) m.installed = true;
+      this.activeFetch = null;
+    }
+    if (ev.phase === "cancelled" || ev.phase === "fatal") {
+      this.activeFetch = null;
+    }
+    this.renderModelList();
+  }
+
+  private renderModelList(): void {
+    const list = this.el("model-list");
+    list.textContent = "";
+    for (const m of this.models) {
+      const row = document.createElement("div");
+      row.className = "row model-row";
+      const label = document.createElement("span");
+      label.className = "label";
+      label.textContent = `${m.label} · ${fmtMB(m.archive_bytes)}`;
+      row.appendChild(label);
+      const status = document.createElement("span");
+      status.className = "cluster";
+      if (m.installed) {
+        status.innerHTML = `<span class="installed">✓ installed</span>`;
+      } else if (this.activeFetch && this.activeFetch.model === m.id) {
+        const f = this.activeFetch;
+        status.innerHTML =
+          f.phase === "extracting"
+            ? `<span class="progress">extracting…</span>`
+            : `<span class="progress">${f.pct}%</span>`;
+      } else {
+        const btn = document.createElement("button");
+        btn.setAttribute("data-model", m.id);
+        btn.textContent = "Download";
+        btn.disabled = this.activeFetch !== null;
+        status.appendChild(btn);
+      }
+      row.appendChild(status);
+      list.appendChild(row);
+    }
+  }
+
   applyConfig(cfg: GuiConfig): void {
     this.cfg = cfg;
     this.el("mode").textContent = cfg.scroll_mode;
     this.el("wpm").textContent = String(cfg.wpm);
     this.el("font-px").textContent = String(cfg.font_px);
     this.el("lead").textContent = String(cfg.lead_lines);
+    this.el("zone-w").textContent = String(cfg.reading_width);
+    this.el("zone-h").textContent = String(cfg.reading_height);
     this.el<HTMLSelectElement>("reading-font").value = cfg.reading_font;
     this.el("mirror-h").classList.toggle("on", cfg.mirror_h);
     this.el("mirror-v").classList.toggle("on", cfg.mirror_v);
@@ -146,8 +239,10 @@ export class Controls {
     this.el("play").classList.toggle("hidden", !dumb);
     this.el("start").classList.toggle("hidden", dumb);
     this.el("device").classList.toggle("hidden", dumb);
-    const sel = this.el<HTMLSelectElement>("device");
-    if (sel.value !== cfg.device) sel.value = cfg.device;
+    const dev = this.el<HTMLSelectElement>("device");
+    if (dev.value !== cfg.device) dev.value = cfg.device;
+    const model = this.el<HTMLSelectElement>("model");
+    if (model.value !== cfg.model) model.value = cfg.model;
   }
 
   applyStatus(status: StatusPayload): void {
@@ -162,8 +257,9 @@ export class Controls {
     this.el("start").textContent = status.running ? "Stop" : "Listen";
     const startBtn = this.el("start");
     startBtn.onclick = () => void (status.running ? api.stop() : api.start());
-    // Device changes need a session restart; disable the picker while live.
+    // Device/model changes need a session restart; lock them while live.
     this.el<HTMLSelectElement>("device").disabled = status.running;
+    this.el<HTMLSelectElement>("model").disabled = status.running;
   }
 
   applyTrack(state: TrackState): void {
@@ -196,7 +292,8 @@ export class Controls {
   private applyVisibility(): void {
     document.body.classList.toggle("chrome-off", this.chromeHidden);
     const idle = performance.now() - this.lastActivity > AUTO_HIDE_MS;
-    const controls = document.getElementById("controls");
-    controls?.classList.toggle("faded", this.chromeHidden || idle);
+    const faded = this.chromeHidden || idle;
+    document.getElementById("controls")?.classList.toggle("faded", faded);
+    this.panel().classList.toggle("faded", faded);
   }
 }

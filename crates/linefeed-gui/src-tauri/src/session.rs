@@ -78,10 +78,11 @@ fn run_session(
     shared: &Shared,
     stop_flag: &AtomicBool,
 ) -> Result<(), String> {
-    let (engine_name, device_sel, debug_log, script_path) = {
+    let (engine_name, model_id, device_sel, debug_log, script_path) = {
         let cfg = lock(&shared.config);
         (
             cfg.engine.clone(),
+            cfg.model.clone(),
             cfg.device.clone(),
             cfg.debug_log,
             cfg.last_script.clone(),
@@ -95,7 +96,7 @@ fn run_session(
 
     status(app, shared, "loading-model", "loading model…");
     let engine_cfg = linefeed_asr::EngineConfig {
-        model_dir: linefeed_asr::default_model_dir(&engine_name)
+        model_dir: linefeed_asr::default_model_dir(&model_id)
             .to_string_lossy()
             .into_owned(),
         num_threads: linefeed_asr::engine_num_threads(&engine_name),

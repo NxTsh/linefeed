@@ -70,6 +70,38 @@ test("shipped chrome: no Debug button, unique data-c ids", () => {
   assert.equal(new Set(ids).size, ids.length, "no duplicate action ids");
 });
 
+test("settings panel: gear on the bar, setup controls in the panel", () => {
+  const bar = CONTROLS_TEMPLATE.slice(0, CONTROLS_TEMPLATE.indexOf("settings-panel"));
+  const panel = CONTROLS_TEMPLATE.slice(CONTROLS_TEMPLATE.indexOf("settings-panel"));
+  assert.ok(bar.includes('data-c="settings"'), "gear lives on the bar");
+  // Session-time controls stay on the bar…
+  for (const id of ["open", "start", "device", "mode", "present"]) {
+    assert.ok(bar.includes(`data-c="${id}"`), `${id} belongs on the bar`);
+  }
+  // …setup-once controls live in the panel.
+  for (const id of ["reading-font", "zone-w-down", "mirror-h", "lead-up", "model", "model-list"]) {
+    assert.ok(panel.includes(`data-c="${id}"`), `${id} belongs in the panel`);
+  }
+  assert.ok(panel.includes("<h3>"), "panel has labeled sections");
+});
+
+test("presentation hide covers the settings panel too", () => {
+  const css = src("styles.css");
+  const chromeOff = css.slice(css.indexOf("body.chrome-off"));
+  assert.ok(chromeOff.includes("#settings-panel"), "panel must vanish with chrome");
+});
+
+test("model picker ids match the Rust registry", () => {
+  const registry = readFileSync(
+    join(here, "..", "..", "linefeed-asr", "src", "models.rs"),
+    "utf8",
+  );
+  for (const id of ["pt-br", "en"]) {
+    assert.ok(registry.includes(`id: "${id}"`), `registry must define ${id}`);
+  }
+  assert.ok(registry.includes(`DEFAULT_MODEL_ID: &str = "pt-br"`));
+});
+
 test("index.html: splash brand and fetch box ship with first paint", () => {
   const html = readFileSync(join(here, "..", "index.html"), "utf8");
   assert.ok(html.includes("#0a0a0a"), "brand background inline");

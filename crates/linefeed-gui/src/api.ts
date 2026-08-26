@@ -68,11 +68,13 @@ export const api = {
     invoke<GuiConfig>("set_reading_zone", { width, height }),
   setLead: (lines: number) => invoke<GuiConfig>("set_lead", { lines }),
   setEngine: (engine: string) => invoke<GuiConfig>("set_engine", { engine }),
+  setModel: (model: string) => invoke<GuiConfig>("set_model", { model }),
   setDevice: (device: string) => invoke<GuiConfig>("set_device", { device }),
   setDebugLog: (on: boolean) => invoke<GuiConfig>("set_debug_log", { on }),
   dumbPlay: (playing: boolean) => invoke<GuiConfig>("dumb_play", { playing }),
   dumbSeek: (cursor: number) => invoke<void>("dumb_seek", { cursor }),
-  downloadModel: () => invoke<void>("download_model"),
+  downloadModel: (model?: string) =>
+    invoke<void>("download_model", { model: model ?? null }),
   cancelModelFetch: () => invoke<void>("cancel_model_fetch"),
 };
 

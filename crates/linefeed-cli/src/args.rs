@@ -19,8 +19,10 @@ USAGE:
 
 OPTIONS:
   --engine <name>        ASR engine (default: sherpa)
-  --model-dir <dir>      model directory (default: $LINEFEED_MODELS_DIR or
-                         the platform data dir under linefeed/models)
+  --model <id>           ASR model: pt-br (default) or en
+  --model-dir <dir>      explicit model directory (overrides --model;
+                         default root: $LINEFEED_MODELS_DIR or the platform
+                         data dir under linefeed/models)
   --threads <n>          decoder threads (default: per-engine)
   --dump-timeline <f>    also record hypotheses as replayable JSONL
   -h, --help             show this help
@@ -35,6 +37,7 @@ pub enum ReplaySource {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct EngineOpts {
     pub engine: String,
+    pub model: String,
     pub model_dir: Option<String>,
     pub threads: Option<i32>,
 }
@@ -85,6 +88,7 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
     let mut input_device: Option<String> = None;
     let mut opts = EngineOpts {
         engine: "sherpa".to_string(),
+        model: "pt-br".to_string(),
         model_dir: None,
         threads: None,
     };
@@ -99,6 +103,7 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
                 dump = Some(PathBuf::from(take_value(&mut it, "--dump-timeline")?))
             }
             "--engine" => opts.engine = take_value(&mut it, "--engine")?,
+            "--model" => opts.model = take_value(&mut it, "--model")?,
             "--model-dir" => opts.model_dir = Some(take_value(&mut it, "--model-dir")?),
             "--input-device" => input_device = Some(take_value(&mut it, "--input-device")?),
             "--threads" => {
@@ -194,6 +199,7 @@ mod tests {
                 assert_eq!(script, PathBuf::from("s.txt"));
                 assert_eq!(source, ReplaySource::Wav(PathBuf::from("f.wav")));
                 assert_eq!(opts.engine, "sherpa");
+                assert_eq!(opts.model, "pt-br", "pt-BR is the default model");
                 assert_eq!(dump, None);
             }
             other => panic!("wrong command: {other:?}"),
@@ -252,6 +258,19 @@ mod tests {
             }
             other => panic!("wrong command: {other:?}"),
         }
+    }
+
+    #[test]
+    fn model_flag_selects_english() {
+        let c = parse(&args(&[
+            "replay", "s.txt", "--wav", "f.wav", "--model", "en",
+        ]))
+        .unwrap();
+        match c {
+            Command::Replay { opts, .. } => assert_eq!(opts.model, "en"),
+            other => panic!("wrong command: {other:?}"),
+        }
+        assert!(parse(&args(&["replay", "s.txt", "--wav", "f", "--model"])).is_err());
     }
 
     #[test]

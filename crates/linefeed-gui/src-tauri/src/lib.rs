@@ -56,13 +56,27 @@ pub struct DevicePayload {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct ModelInfoPayload {
+    pub id: String,
+    pub label: String,
+    pub lang: String,
+    pub archive_bytes: u64,
+    pub installed: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct StartupInfoPayload {
     pub engines: Vec<String>,
     pub engine: String,
+    /// Selected model id from the registry.
+    pub model: String,
+    /// Every model linefeed can download, with install state.
+    pub models: Vec<ModelInfoPayload>,
     pub models_dir: String,
+    /// True when the SELECTED model is installed.
     pub models_ok: bool,
     pub missing: Vec<String>,
-    /// True when the missing model can be downloaded by the splash.
+    /// True when the missing selected model can be downloaded by the splash.
     pub fetchable: bool,
     pub fetch_url: String,
     pub fetch_bytes: u64,
@@ -308,32 +322,59 @@ fn emit_dumb(app: &tauri::AppHandle, state: &Shared) {
 }
 
 #[tauri::command]
+fn set_model(app: tauri::AppHandle, state: AppState, model: String) -> GuiConfig {
+    update_config(&app, &state, |c| c.model = model)
+}
+
+#[tauri::command]
 fn startup_probe(state: AppState) -> StartupInfoPayload {
     let cfg = lock(&state.config).clone();
     let models_dir = linefeed_asr::models_dir();
-    let missing = model_fetch::missing_model_files(&cfg.engine, &models_dir);
-    let fetchable = cfg.engine == "sherpa" && !missing.is_empty();
+    let spec = linefeed_asr::models::model_spec_or_default(&cfg.model);
+    let missing = linefeed_asr::models::missing_files(spec);
+    let fetchable = linefeed_asr::engine_available("sherpa") && !missing.is_empty();
+    let models = linefeed_asr::models::MODELS
+        .iter()
+        .map(|m| ModelInfoPayload {
+            id: m.id.to_string(),
+            label: m.label.to_string(),
+            lang: m.lang.to_string(),
+            archive_bytes: m.archive_bytes,
+            installed: linefeed_asr::models::model_installed(m),
+        })
+        .collect();
     StartupInfoPayload {
         engines: available_engines(),
         engine: cfg.engine,
+        model: spec.id.to_string(),
+        models,
         models_dir: models_dir.to_string_lossy().into_owned(),
         models_ok: missing.is_empty(),
         missing,
         fetchable,
-        fetch_url: model_fetch::SHERPA_PT_URL.to_string(),
-        fetch_bytes: model_fetch::EXPECTED_BYTES,
+        fetch_url: spec.url.to_string(),
+        fetch_bytes: spec.archive_bytes,
         last_script: cfg.last_script,
     }
 }
 
+/// Start downloading a registry model — `model: None` means the selected
+/// one. One download at a time.
 #[tauri::command(async)]
-fn download_model(app: tauri::AppHandle, state: AppState) -> Result<(), String> {
+fn download_model(
+    app: tauri::AppHandle,
+    state: AppState,
+    model: Option<String>,
+) -> Result<(), String> {
+    let id = model.unwrap_or_else(|| lock(&state.config).model.clone());
+    let spec =
+        linefeed_asr::models::model_spec(&id).ok_or_else(|| format!("unknown model {id:?}"))?;
     {
         let mut slot = lock(&state.fetch);
         if slot.is_some() {
             return Err("a model download is already running".to_string());
         }
-        *slot = Some(model_fetch::spawn(linefeed_asr::models_dir()));
+        *slot = Some(model_fetch::spawn(linefeed_asr::models_dir(), spec));
     }
     // Forward worker events until the terminal one, then clear the slot.
     let shared = state.inner().clone();
@@ -465,6 +506,7 @@ pub fn run() {
             set_reading_zone,
             set_lead,
             set_engine,
+            set_model,
             set_device,
             set_debug_log,
             dumb_play,

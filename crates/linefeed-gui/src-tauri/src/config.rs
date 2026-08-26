@@ -23,6 +23,8 @@ pub const WPM_RANGE: (u32, u32) = (40, 400);
 #[serde(default)]
 pub struct GuiConfig {
     pub engine: String,
+    /// ASR model id from the registry ("pt-br", "en").
+    pub model: String,
     /// Input device selector (substring or 1-based index); empty = default.
     pub device: String,
     /// "voice" or "dumb".
@@ -45,6 +47,7 @@ impl Default for GuiConfig {
     fn default() -> GuiConfig {
         GuiConfig {
             engine: "sherpa".to_string(),
+            model: linefeed_asr::models::DEFAULT_MODEL_ID.to_string(),
             device: String::new(),
             scroll_mode: "voice".to_string(),
             wpm: 140,
@@ -84,6 +87,10 @@ pub fn sanitize(cfg: &mut GuiConfig) {
     if !engines.contains(&cfg.engine.as_str()) {
         cfg.engine = engines.first().copied().unwrap_or("sherpa").to_string();
     }
+    // Unknown / stale model ids coerce to the registry default.
+    cfg.model = linefeed_asr::models::model_spec_or_default(&cfg.model)
+        .id
+        .to_string();
 }
 
 pub fn load(path: &std::path::Path) -> GuiConfig {
@@ -128,9 +135,11 @@ mod tests {
             reading_font: "comic-sans".to_string(),
             scroll_mode: "warp".to_string(),
             engine: "whisper".to_string(),
+            model: "klingon".to_string(),
             ..GuiConfig::default()
         };
         sanitize(&mut cfg);
+        assert_eq!(cfg.model, "pt-br", "unknown model coerces to default");
         assert_eq!(cfg.font_px, FONT_PX_RANGE.1);
         assert_eq!(cfg.reading_width, READING_WIDTH_RANGE.0);
         assert_eq!(cfg.reading_height, READING_HEIGHT_RANGE.0);

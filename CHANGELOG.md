@@ -35,6 +35,14 @@ implementation's surveyed design flaws at the architecture level.
   TS↔Rust contract pins.
 - M6: CI — platform matrix, zero-warning feature-combo guard, GUI job,
   deterministic timeline-replay E2E (no models needed).
+- Model registry: pt-BR (NeMo FastConformer large, 99 MB) and English
+  (NeMo Conformer medium, 158 MB), single source of truth for the CLI
+  (`--model pt-br|en`), the GUI language picker, and the downloader.
+  Sizes and archive layouts verified against the live release assets.
+- GUI overlay redesign: slim bottom bar (open / device / listen / mode /
+  transport) + a gear-toggled settings panel with labeled sections
+  (Reading, Layout, Voice model, Keys). Models can be downloaded from the
+  panel with live progress; install state is shown per model.
 
 ### Fixed (relative to the first implementation, by design)
 - Accented filler words (`não`, `já`, `há`, `né`, `lá`…) now actually

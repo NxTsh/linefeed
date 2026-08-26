@@ -209,14 +209,158 @@ body {
   border-color: var(--accent);
 }
 
+#controls button.primary {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 700;
+  padding: 4px 14px;
+}
+
+#controls button.primary:hover {
+  filter: brightness(1.15);
+}
+
 #controls .value {
-  min-width: 44px;
+  min-width: 34px;
   text-align: center;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 #controls .hidden {
   display: none;
+}
+
+/* --------------------------------------------------------- settings panel */
+
+#settings-panel {
+  position: fixed;
+  right: 18px;
+  bottom: 72px;
+  width: 340px;
+  max-height: min(70vh, 640px);
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  border: 1px solid #26262c;
+  border-radius: 12px;
+  padding: 6px 16px 12px;
+  font-size: 12px;
+  z-index: 55;
+  transition: opacity 200ms ease;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.5);
+}
+
+#settings-panel.hidden {
+  display: none;
+}
+
+#settings-panel.faded {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#settings-panel .panel-section {
+  padding: 10px 0;
+  border-bottom: 1px solid #202027;
+}
+
+#settings-panel .panel-section:last-child {
+  border-bottom: none;
+}
+
+#settings-panel h3 {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+#settings-panel .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+#settings-panel .row .label {
+  color: var(--text);
+  opacity: 0.85;
+}
+
+#settings-panel .cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#settings-panel .unit {
+  color: var(--muted);
+}
+
+#settings-panel button,
+#settings-panel select {
+  font: inherit;
+  font-family: var(--mono);
+  color: var(--text);
+  background: transparent;
+  border: 1px solid #2e2e35;
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+#settings-panel button:hover {
+  border-color: var(--accent);
+}
+
+#settings-panel button.on {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+#settings-panel button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+#settings-panel .value {
+  min-width: 30px;
+  text-align: center;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+#settings-panel .model-row .label {
+  font-size: 11px;
+}
+
+#settings-panel .installed {
+  color: var(--ok);
+}
+
+#settings-panel .progress {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+#settings-panel .keys {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  color: var(--muted);
+}
+
+#settings-panel kbd {
+  background: var(--bg);
+  border: 1px solid #2e2e35;
+  border-radius: 4px;
+  padding: 0 5px;
+  font-size: 10px;
 }
 
 /* --------------------------------------------------------------- pill/hud */
@@ -299,6 +443,7 @@ body {
 /* Presentation mode: chrome-off hides every overlay; the pill dot stays
    readable at half strength so LOST is never invisible. */
 body.chrome-off #controls,
+body.chrome-off #settings-panel,
 body.chrome-off #posbar,
 body.chrome-off #banner {
   opacity: 0;

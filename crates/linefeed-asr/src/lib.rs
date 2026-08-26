@@ -5,6 +5,7 @@
 //! missing engine is a runtime error, never a compile error.
 
 pub mod engine;
+pub mod models;
 pub mod timeline;
 
 #[cfg(feature = "mic")]
@@ -89,16 +90,10 @@ fn platform_data_dir() -> std::path::PathBuf {
     std::env::temp_dir()
 }
 
-/// Directory name of the sherpa pt-BR model inside the models dir.
-pub const SHERPA_PT_MODEL_DIRNAME: &str =
-    "sherpa-onnx-nemo-stt_pt_fastconformer_hybrid_large_pc-int8";
-
-/// Default model dir for an engine, under [`models_dir`].
-pub fn default_model_dir(engine: &str) -> std::path::PathBuf {
-    match engine {
-        "sherpa" => models_dir().join(SHERPA_PT_MODEL_DIRNAME),
-        other => models_dir().join(other),
-    }
+/// Default model dir for a model id, under [`models_dir`] — see
+/// [`models::MODELS`] for the registry.
+pub fn default_model_dir(model_id: &str) -> std::path::PathBuf {
+    models::model_dir(models::model_spec_or_default(model_id))
 }
 
 #[cfg(test)]

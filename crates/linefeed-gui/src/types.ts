@@ -43,6 +43,7 @@ export interface DumbEvent {
 
 export interface GuiConfig {
   engine: string;
+  model: string;
   device: string;
   scroll_mode: "voice" | "dumb";
   wpm: number;
@@ -72,9 +73,19 @@ export interface DevicePayload {
   configs: string;
 }
 
+export interface ModelInfoPayload {
+  id: string;
+  label: string;
+  lang: string;
+  archive_bytes: number;
+  installed: boolean;
+}
+
 export interface StartupInfoPayload {
   engines: string[];
   engine: string;
+  model: string;
+  models: ModelInfoPayload[];
   models_dir: string;
   models_ok: boolean;
   missing: string[];
@@ -85,6 +96,7 @@ export interface StartupInfoPayload {
 }
 
 export interface ModelFetchEvent {
+  model: string;
   phase:
     | "starting"
     | "downloading"

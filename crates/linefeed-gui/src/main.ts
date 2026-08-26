@@ -169,6 +169,11 @@ async function main(): Promise<void> {
   onModelFetch((ev) => {
     fetchState = nextFetch(fetchState, ev);
     applyFetch(ev);
+    controls.updateModelFetch(ev);
+    if (ev.phase === "ready") {
+      // Refresh install states in the settings panel.
+      void api.startupProbe().then((p) => p && controls.setModels(p));
+    }
   });
   el("fetch-accept").addEventListener("click", () => {
     if (fetchState !== "offer") return;
@@ -200,6 +205,7 @@ async function main(): Promise<void> {
       controls.applyConfig(cfg);
     }
     void controls.refreshDevices();
+    if (probe) controls.setModels(probe);
     setPhase("engine-ready");
     if (probe && shouldOfferFetch(probe)) {
       fetchState = "offer";

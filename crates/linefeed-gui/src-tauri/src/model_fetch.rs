@@ -16,18 +16,18 @@ use std::sync::Arc;
 
 use serde::Serialize;
 
-pub const SHERPA_PT_URL: &str = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-stt_pt_fastconformer_hybrid_large_pc-int8.tar.bz2";
-/// Advertised size for progress math (the release asset, ~131 MiB).
-pub const EXPECTED_BYTES: u64 = 131 * 1024 * 1024;
 /// The extracted model's ONNX must exceed this or the download was junk
-/// (an HTML error page survives tar surprisingly often).
+/// (an HTML error page survives tar surprisingly often). Smallest registry
+/// model (en conformer-medium int8) is ~67 MB.
 pub const MIN_MODEL_BYTES: u64 = 50 * 1024 * 1024;
 pub const SENTINEL_FILE: &str = "model.int8.onnx";
 
-pub use linefeed_asr::SHERPA_PT_MODEL_DIRNAME as MODEL_DIRNAME;
+pub use linefeed_asr::models::ModelSpec;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct ModelFetchEvent {
+    /// Registry id of the model this event is about ("pt-br", "en").
+    pub model: String,
     /// "starting" | "downloading" | "retrying" | "extracting" | "ready" |
     /// "cancelled" | "fatal"
     pub phase: String,
@@ -41,8 +41,15 @@ pub struct ModelFetchEvent {
 }
 
 impl ModelFetchEvent {
-    fn phase(phase: &str, downloaded: u64, total: u64, message: String) -> ModelFetchEvent {
+    fn phase(
+        model: &str,
+        phase: &str,
+        downloaded: u64,
+        total: u64,
+        message: String,
+    ) -> ModelFetchEvent {
         ModelFetchEvent {
+            model: model.to_string(),
             phase: phase.to_string(),
             downloaded,
             total,
@@ -63,11 +70,10 @@ pub fn percent(done: u64, total: u64) -> u32 {
 }
 
 /// POSIX-quoted manual fallback.
-pub fn manual_curl(models_dir: &Path) -> String {
+pub fn manual_curl(models_dir: &Path, url: &str) -> String {
     format!(
         "mkdir -p {dir} && curl -L {url} | tar -xj -C {dir}",
         dir = shell_quote(&models_dir.to_string_lossy()),
-        url = SHERPA_PT_URL,
     )
 }
 
@@ -116,13 +122,14 @@ impl FetchHandle {
     }
 }
 
-/// Spawn the fetch worker. Events stream on the returned receiver; the last
-/// event is always terminal ("ready" | "cancelled" | "fatal").
-pub fn spawn(models_dir: PathBuf) -> FetchHandle {
+/// Spawn the fetch worker for one registry model. Events stream on the
+/// returned receiver; the last event is always terminal
+/// ("ready" | "cancelled" | "fatal").
+pub fn spawn(models_dir: PathBuf, spec: &'static ModelSpec) -> FetchHandle {
     let cancel = Arc::new(AtomicBool::new(false));
     let (tx, rx) = mpsc::channel();
     let c = cancel.clone();
-    let join = std::thread::spawn(move || run_fetch(&models_dir, &c, &tx));
+    let join = std::thread::spawn(move || run_fetch(&models_dir, spec, &c, &tx));
     FetchHandle {
         cancel,
         events: rx,
@@ -134,29 +141,37 @@ fn emit(tx: &mpsc::Sender<ModelFetchEvent>, ev: ModelFetchEvent) {
     let _ = tx.send(ev);
 }
 
-fn run_fetch(models_dir: &Path, cancel: &AtomicBool, tx: &mpsc::Sender<ModelFetchEvent>) {
-    let install_dir = models_dir.join(MODEL_DIRNAME);
+fn run_fetch(
+    models_dir: &Path,
+    spec: &ModelSpec,
+    cancel: &AtomicBool,
+    tx: &mpsc::Sender<ModelFetchEvent>,
+) {
+    let install_dir = models_dir.join(spec.dirname);
+    let bytes = spec.archive_bytes;
     if verify_model(&install_dir) {
         emit(
             tx,
             ModelFetchEvent::phase(
+                spec.id,
                 "ready",
-                EXPECTED_BYTES,
-                EXPECTED_BYTES,
+                bytes,
+                bytes,
                 "model already installed".into(),
             ),
         );
         return;
     }
     for attempt in 1..=2u32 {
-        match fetch_once(models_dir, cancel, tx) {
+        match fetch_once(models_dir, spec, cancel, tx) {
             Ok(()) => {
                 emit(
                     tx,
                     ModelFetchEvent::phase(
+                        spec.id,
                         "ready",
-                        EXPECTED_BYTES,
-                        EXPECTED_BYTES,
+                        bytes,
+                        bytes,
                         "model installed".into(),
                     ),
                 );
@@ -165,7 +180,7 @@ fn run_fetch(models_dir: &Path, cancel: &AtomicBool, tx: &mpsc::Sender<ModelFetc
             Err(FetchError::Cancelled) => {
                 emit(
                     tx,
-                    ModelFetchEvent::phase("cancelled", 0, 0, "download cancelled".into()),
+                    ModelFetchEvent::phase(spec.id, "cancelled", 0, 0, "download cancelled".into()),
                 );
                 return;
             }
@@ -173,9 +188,10 @@ fn run_fetch(models_dir: &Path, cancel: &AtomicBool, tx: &mpsc::Sender<ModelFetc
                 emit(
                     tx,
                     ModelFetchEvent::phase(
+                        spec.id,
                         "retrying",
                         0,
-                        EXPECTED_BYTES,
+                        bytes,
                         format!("{msg} — retrying"),
                     ),
                 );
@@ -184,13 +200,14 @@ fn run_fetch(models_dir: &Path, cancel: &AtomicBool, tx: &mpsc::Sender<ModelFetc
                 emit(
                     tx,
                     ModelFetchEvent {
+                        model: spec.id.to_string(),
                         phase: "fatal".to_string(),
                         downloaded: 0,
-                        total: EXPECTED_BYTES,
+                        total: bytes,
                         pct: 0,
                         message: msg,
                         fatal: true,
-                        curl: manual_curl(models_dir),
+                        curl: manual_curl(models_dir, spec.url),
                     },
                 );
                 return;
@@ -206,39 +223,41 @@ enum FetchError {
 
 fn fetch_once(
     models_dir: &Path,
+    spec: &ModelSpec,
     cancel: &AtomicBool,
     tx: &mpsc::Sender<ModelFetchEvent>,
 ) -> Result<(), FetchError> {
     std::fs::create_dir_all(models_dir)
         .map_err(|e| FetchError::Failed(format!("create models dir: {e}")))?;
-    let part = models_dir.join(format!("{MODEL_DIRNAME}.part"));
-    let staging = models_dir.join(format!("{MODEL_DIRNAME}.staging"));
-    let install_dir = models_dir.join(MODEL_DIRNAME);
+    let part = models_dir.join(format!("{}.part", spec.dirname));
+    let staging = models_dir.join(format!("{}.staging", spec.dirname));
+    let install_dir = models_dir.join(spec.dirname);
     // Clear leftovers from a previous crash/cancel.
     let _ = std::fs::remove_file(&part);
     let _ = std::fs::remove_dir_all(&staging);
 
-    stream_to_file(SHERPA_PT_URL, &part, cancel, tx).inspect_err(|_| {
+    stream_to_file(spec, &part, cancel, tx).inspect_err(|_| {
         let _ = std::fs::remove_file(&part);
     })?;
 
     emit(
         tx,
         ModelFetchEvent::phase(
+            spec.id,
             "extracting",
-            EXPECTED_BYTES,
-            EXPECTED_BYTES,
+            spec.archive_bytes,
+            spec.archive_bytes,
             "extracting model…".into(),
         ),
     );
-    extract_tarbz2(&part, &staging).map_err(|e| {
+    extract_tarbz2(&part, &staging, spec.dirname).map_err(|e| {
         let _ = std::fs::remove_file(&part);
         let _ = std::fs::remove_dir_all(&staging);
         FetchError::Failed(e)
     })?;
     let _ = std::fs::remove_file(&part);
 
-    let staged_model = staging.join(MODEL_DIRNAME);
+    let staged_model = staging.join(spec.dirname);
     if !verify_model(&staged_model) {
         let _ = std::fs::remove_dir_all(&staging);
         return Err(FetchError::Failed(
@@ -253,7 +272,7 @@ fn fetch_once(
 }
 
 fn stream_to_file(
-    url: &str,
+    spec: &ModelSpec,
     dest: &Path,
     cancel: &AtomicBool,
     tx: &mpsc::Sender<ModelFetchEvent>,
@@ -262,13 +281,13 @@ fn stream_to_file(
         .timeout_connect(std::time::Duration::from_secs(10))
         .timeout_read(std::time::Duration::from_secs(60))
         .build()
-        .get(url)
+        .get(spec.url)
         .call()
         .map_err(|e| FetchError::Failed(format!("download: {e}")))?;
     let total = resp
         .header("content-length")
         .and_then(|v| v.parse::<u64>().ok())
-        .unwrap_or(EXPECTED_BYTES);
+        .unwrap_or(spec.archive_bytes);
     let mut reader = resp.into_reader();
     let mut file = std::io::BufWriter::with_capacity(
         256 * 1024,
@@ -280,7 +299,13 @@ fn stream_to_file(
     let mut last_report = 0u64;
     emit(
         tx,
-        ModelFetchEvent::phase("downloading", 0, total, "downloading model…".into()),
+        ModelFetchEvent::phase(
+            spec.id,
+            "downloading",
+            0,
+            total,
+            "downloading model…".into(),
+        ),
     );
     loop {
         if cancel.load(Ordering::SeqCst) {
@@ -300,6 +325,7 @@ fn stream_to_file(
             emit(
                 tx,
                 ModelFetchEvent::phase(
+                    spec.id,
                     "downloading",
                     downloaded,
                     total,
@@ -316,7 +342,7 @@ fn stream_to_file(
     Ok(())
 }
 
-fn extract_tarbz2(archive: &Path, staging: &Path) -> Result<(), String> {
+fn extract_tarbz2(archive: &Path, staging: &Path, expected_top: &str) -> Result<(), String> {
     std::fs::create_dir_all(staging).map_err(|e| format!("create staging: {e}"))?;
     let file = std::fs::File::open(archive).map_err(|e| format!("open archive: {e}"))?;
     let bz = bzip2::read::BzDecoder::new(std::io::BufReader::new(file));
@@ -328,7 +354,7 @@ fn extract_tarbz2(archive: &Path, staging: &Path) -> Result<(), String> {
             .path()
             .map_err(|e| format!("entry path: {e}"))?
             .into_owned();
-        if !archive_entry_ok(&path, MODEL_DIRNAME) {
+        if !archive_entry_ok(&path, expected_top) {
             return Err(format!("archive entry rejected: {}", path.display()));
         }
         let dest = staging.join(&path);
@@ -352,21 +378,6 @@ pub fn verify_model(dir: &Path) -> bool {
     std::fs::metadata(dir.join(SENTINEL_FILE))
         .map(|m| m.len() >= MIN_MODEL_BYTES)
         .unwrap_or(false)
-}
-
-/// Which files an engine needs, for the startup probe.
-pub fn missing_model_files(engine: &str, models_dir: &Path) -> Vec<String> {
-    match engine {
-        "sherpa" => {
-            let dir = models_dir.join(MODEL_DIRNAME);
-            ["model.int8.onnx", "tokens.txt"]
-                .iter()
-                .filter(|f| !dir.join(f).exists())
-                .map(|f| format!("{MODEL_DIRNAME}/{f}"))
-                .collect()
-        }
-        _ => vec![format!("unknown engine {engine}")],
-    }
 }
 
 #[cfg(test)]
@@ -432,18 +443,16 @@ mod tests {
     }
 
     #[test]
-    fn missing_files_probe() {
-        let dir = std::env::temp_dir().join("lf-nxt-missing-test");
-        std::fs::remove_dir_all(&dir).ok();
-        let missing = missing_model_files("sherpa", &dir);
-        assert_eq!(missing.len(), 2);
-        assert!(missing[0].contains("model.int8.onnx"));
-        let unknown = missing_model_files("whisper", &dir);
-        assert!(unknown[0].contains("unknown engine"));
+    fn manual_curl_uses_the_spec_url() {
+        let spec = linefeed_asr::models::model_spec("en").unwrap();
+        let cmd = manual_curl(Path::new("/tmp/models"), spec.url);
+        assert!(cmd.contains(spec.url));
+        assert!(cmd.contains("tar -xj -C /tmp/models"));
     }
 
     #[test]
     fn real_tarbz2_roundtrip_with_rejections() {
+        const MODEL_DIRNAME: &str = "test-model-dir";
         // Build a tiny tar.bz2 in memory, then extract through the
         // allow-list into a temp staging dir.
         let base = std::env::temp_dir().join("lf-nxt-tar-test");
@@ -469,7 +478,7 @@ mod tests {
             tar.into_inner().unwrap().finish().unwrap();
         }
         let staging = base.join("staging");
-        extract_tarbz2(&archive_path, &staging).unwrap();
+        extract_tarbz2(&archive_path, &staging, MODEL_DIRNAME).unwrap();
         assert!(staging.join(MODEL_DIRNAME).join("tokens.txt").exists());
 
         // Wrong top dir is rejected.
@@ -487,7 +496,7 @@ mod tests {
                 .unwrap();
             tar.into_inner().unwrap().finish().unwrap();
         }
-        let err = extract_tarbz2(&bad, &base.join("staging2")).unwrap_err();
+        let err = extract_tarbz2(&bad, &base.join("staging2"), MODEL_DIRNAME).unwrap_err();
         assert!(err.contains("rejected"), "{err}");
         std::fs::remove_dir_all(&base).ok();
     }

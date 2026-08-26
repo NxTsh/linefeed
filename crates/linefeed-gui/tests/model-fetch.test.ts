@@ -13,6 +13,7 @@ import type { ModelFetchEvent, StartupInfoPayload } from "../src/types.ts";
 
 function ev(phase: ModelFetchEvent["phase"], extra: Partial<ModelFetchEvent> = {}): ModelFetchEvent {
   return {
+    model: "pt-br",
     phase,
     downloaded: 0,
     total: 0,
@@ -69,6 +70,8 @@ test("shouldOfferFetch matrix", () => {
   const probe = (models_ok: boolean, fetchable: boolean): StartupInfoPayload => ({
     engines: ["sherpa"],
     engine: "sherpa",
+    model: "pt-br",
+    models: [],
     models_dir: "/m",
     models_ok,
     missing: models_ok ? [] : ["x"],

@@ -37,7 +37,10 @@ Workspace at the repo root (no `app/` nesting).
 - sherpa-onnx >= 1.13.6 (1.13.5 osx-arm64 static bundle aborts at load).
 - Feature names are unified across crates: `sherpa`, `mic` (vosk deferred).
 - Models dir: `LINEFEED_MODELS_DIR` env, else the platform data dir. No
-  compile-time dev paths.
+  compile-time dev paths. The model registry (`linefeed-asr/src/models.rs`)
+  is the single source of truth for downloadable models (pt-br, en) — when
+  adding one, LIST THE ACTUAL TARBALL first (entries may be `./`-prefixed;
+  `model.int8.onnx` + `tokens.txt` must sit under one top-level dir).
 - Dark theme only: bg `#0A0A0A`, text `#E8E3D9`, accent cyan `#22D3EE`.
   Status green/amber/red are semantic — never reassign them.
 
