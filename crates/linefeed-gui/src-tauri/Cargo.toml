@@ -1,0 +1,37 @@
+[package]
+name = "linefeed-gui"
+description = "linefeed teleprompter GUI (Tauri v2): renders the script, follows the speaker's voice via linefeed-core cursor events."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+default-run = "linefeed-gui"
+
+[features]
+# Default = sherpa only: sherpa-onnx links statically and self-downloads its
+# libs, so a fresh clone runs `npx tauri dev` with zero native-lib staging.
+# Feature names are unified with the CLI (`sherpa`, `mic`).
+default = ["sherpa", "mic"]
+sherpa = ["linefeed-asr/sherpa"]
+mic = ["linefeed-asr/mic"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+linefeed-core = { path = "../../linefeed-core", features = ["serde"] }
+linefeed-asr = { path = "../../linefeed-asr" }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+# First-run model fetch. All three are already transitive deps of
+# sherpa-onnx-sys, so promoting them adds no new lockfile entries.
+ureq = "2"
+tar = "0.4"
+bzip2 = "0.4"
+
+[lib]
+name = "linefeed_gui_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]

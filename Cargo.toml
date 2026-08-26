@@ -4,6 +4,7 @@ members = [
     "crates/linefeed-core",
     "crates/linefeed-asr",
     "crates/linefeed-cli",
+    "crates/linefeed-gui/src-tauri",
 ]
 # The GUI crate joins `members` in M4 but stays out of default-members:
 # bare `cargo build` / `cargo test` must never require webkit2gtk/GTK.
