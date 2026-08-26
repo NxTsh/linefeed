@@ -172,7 +172,9 @@ export class Controls {
     for (const m of probe.models) {
       const opt = document.createElement("option");
       opt.value = m.id;
-      opt.textContent = m.label;
+      // Short language name in the picker; the full model name lives in
+      // the download rows below.
+      opt.textContent = m.label.split(" — ")[0] ?? m.label;
       sel.appendChild(opt);
     }
     sel.value = this.cfg?.model ?? probe.model;

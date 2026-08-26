@@ -252,6 +252,7 @@ body {
   width: 340px;
   max-height: min(70vh, 640px);
   overflow-y: auto;
+  overflow-x: hidden;
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   border: 1px solid #26262c;
   border-radius: 12px;
@@ -300,6 +301,15 @@ body {
 #settings-panel .row .label {
   color: var(--text);
   opacity: 0.85;
+  /* Long model labels must wrap inside the panel, never widen it. */
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#settings-panel select {
+  max-width: 190px;
+  text-overflow: ellipsis;
 }
 
 #settings-panel .cluster {
