@@ -304,9 +304,11 @@ async function main(): Promise<void> {
         play.click();
       }
     } else if (e.key === "[") {
-      controls.lead(-1);
+      const n = controls.lead(-1);
+      hud(`lookahead: ${n} ${n === 1 ? "line" : "lines"} below the reading line`);
     } else if (e.key === "]") {
-      controls.lead(1);
+      const n = controls.lead(1);
+      hud(`lookahead: ${n} ${n === 1 ? "line" : "lines"} below the reading line`);
     } else if (e.altKey && e.key === "ArrowLeft") {
       controls.zone(-5, 0);
     } else if (e.altKey && e.key === "ArrowRight") {

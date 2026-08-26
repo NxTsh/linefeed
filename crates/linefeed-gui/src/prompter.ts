@@ -105,6 +105,10 @@ export class PrompterView {
     if (layoutChanged) {
       this.layoutDirty = true;
       this.reanchor();
+    } else if (prev && prev.lead_lines !== cfg.lead_lines) {
+      // Lookahead changes must re-aim the spring immediately, not wait for
+      // the next tracker event.
+      this.updateTarget(false);
     } else {
       this.applyTransform();
     }

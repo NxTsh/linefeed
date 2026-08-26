@@ -134,11 +134,13 @@ export class Controls {
     void api.setReadingZone(width, height);
   }
 
-  lead(delta: number): void {
-    if (!this.cfg) return;
+  /** Returns the new value so keyboard callers can toast it. */
+  lead(delta: number): number {
+    if (!this.cfg) return 0;
     const lines = Math.max(0, Math.min(MAX_LEAD_LINES, this.cfg.lead_lines + delta));
     this.cfg = { ...this.cfg, lead_lines: lines };
     void api.setLead(lines);
+    return lines;
   }
 
   /** (Re)populate the input-device dropdown; keeps the persisted choice
