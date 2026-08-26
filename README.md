@@ -4,16 +4,35 @@
   <img src="assets/wordmark-1024.png" width="340" alt="linefeed wordmark" />
 </p>
 
-# Linefeed (nxt)
+# Linefeed
 
-A clean-room rewrite of [Linefeed](../linefeed), the open-source teleprompter
-that scrolls as you speak. Speech recognition and script alignment run offline
-on your machine — no cloud, no accounts, no uploaded audio.
+An open-source teleprompter that scrolls as you speak. Speech recognition and
+script alignment run offline on your machine — no cloud, no accounts, no
+uploaded audio.
 
-This repo reimplements the same product on the same stack (Rust workspace +
-Tauri v2 + plain TypeScript/Vite), carrying over the validated algorithm
-design and brand/UX decisions while fixing the first implementation's known
-design flaws at the architecture level.
+## Why
+
+Teleprompters that follow your voice usually mean vendor accounts, per-minute
+cloud ASR, and your voice shipped to someone else's servers. Linefeed is
+local-first by construction: recognition, alignment, and rendering all run on
+your machine. Free forever — Apache-2.0, models on disk, nothing to renew.
+
+## Features
+
+- Voice-following scroll with a line highlight on the words you're reading
+- Portuguese (pt-BR) and English speech models, downloadable in-app
+- Reading zone: a resizable centered box the text scrolls inside
+- Configurable lookahead (`[` / `]`): how many upcoming lines stay visible
+- Reading font picker: Inter, Atkinson Hyperlegible (low-vision), Source
+  Sans 3, Noto Sans, Georgia, system default
+- Mirroring (horizontal / vertical) for beam-splitter and glass setups
+- Dumb-scroll fallback: constant-speed scroll with no microphone at all
+- Presentation mode: `h` hides every control until you bring it back
+- Session diagnostics (`Cmd/Ctrl+D`): tracker events + mic levels as JSONL
+- CLI with deterministic replay (`replay`), live mic (`live`), device
+  listing (`devices`) and timeline recording (`dump`) — the same alignment
+  core as the GUI
+- Linux and macOS; works fully offline at runtime
 
 ## How it works
 
@@ -26,38 +45,81 @@ design flaws at the architecture level.
 - The renderer keeps the spoken line at the reading anchor and glides the
   scroll target with the configured lookahead.
 
-pt-BR-first: normalization, filler handling, and number expansion target
-Brazilian Portuguese.
+No cloud anywhere in that chain. Audio never leaves the machine; ASR models
+live on your disk and are not part of the repo.
 
 ## Layout
 
 ```
 crates/linefeed-core   pure alignment (no audio, no UI, no deps)
-crates/linefeed-asr    AsrEngine trait, sherpa engine, timeline replay, mic
+crates/linefeed-asr    AsrEngine trait, sherpa engine, model registry, mic
 crates/linefeed-cli    binary `linefeed`: replay / live / devices / dump
-crates/linefeed-gui    Tauri v2 app (arrives in M4/M5)
+crates/linefeed-gui    Tauri v2 app (Rust backend + TS/Vite frontend)
 ```
 
-## Build
+## Install and quickstart
+
+### GUI (Tauri)
 
 ```bash
-cargo test          # core + asr + cli (GUI excluded from default-members)
-cargo build --release
+cd crates/linefeed-gui
+npm install
+npx tauri dev
 ```
 
-ASR models are not in git. Point the tools at a models directory with
-`LINEFEED_MODELS_DIR`, or let the GUI download the sherpa pt-BR model on
-first run.
+On first run the splash offers to download the speech model for your
+selected language (pt-BR ~99 MB, English ~158 MB); both can also be
+installed later from the settings panel. Declining is fine — dumb scroll
+works without any model. On Linux without system webkit2gtk dev packages,
+source `scripts/dev-env.sh` first.
+
+### CLI
+
+```bash
+cargo build --release
+
+# deterministic replay of a 16 kHz mono WAV:
+./target/release/linefeed replay script.txt --wav take.wav
+
+# live microphone (devices lists inputs; --model en for English):
+./target/release/linefeed devices
+./target/release/linefeed live script.txt --input-device 1 --dump-timeline take.jsonl
+```
+
+Models install to the platform data dir (override with
+`LINEFEED_MODELS_DIR`); the GUI downloads them for you, or use the same
+URLs from the model registry (`crates/linefeed-asr/src/models.rs`).
+
+## Keyboard shortcuts
+
+| Key | Action |
+|-----|--------|
+| `h` | Presentation mode — hide all controls (`h` / `Esc` / resting the pointer on the bottom edge brings them back) |
+| `f` | Resume auto-follow after a manual scroll |
+| `F11` / `Cmd+F` / `Ctrl+F` | Toggle fullscreen |
+| `[` / `]` | Lookahead lines down / up |
+| `Alt+←/→` | Reading-zone width down / up |
+| `Alt+↑/↓` | Reading-zone height down / up |
+| `Cmd/Ctrl+D` | Toggle session diagnostics (applies from next session start) |
+| `Space` | Play / pause (dumb-scroll mode only) |
+| `Cmd/Ctrl+O` | Open a script |
 
 ## Status
 
-All six rewrite milestones are implemented: core, ASR, CLI, GUI backend,
-GUI frontend, CI. The alignment pipeline is E2E-validated against the first
-repo's recorded pt-BR takes (100% final cursor on clean, noisy, ad-lib and
-skip-around fixtures). Live-mic behavior needs real-hardware validation, and
-release packaging (installers, Homebrew) has not been ported yet. See
-`CHANGELOG.md` for details.
+Alpha, actively developed. The alignment core is validated end-to-end on
+recorded pt-BR takes (clean, noisy, ad-lib, and skip-around: final cursor
+100% of script tokens). This codebase is a from-scratch rewrite of the
+original implementation, carrying its validated algorithm design forward
+while fixing the first version's known flaws at the architecture level.
 
 ## License
 
 Apache-2.0 — see [`LICENSE`](LICENSE).
+
+Fonts, all SIL Open Font License 1.1 (licenses ship alongside each family
+in `crates/linefeed-gui/src/assets/fonts/`):
+
+- [SauceCodePro Nerd Font](https://www.nerdfonts.com/) — brand mono (controls, accents, wordmark)
+- [Inter](https://rsms.me/inter/) — default reading face
+- [Atkinson Hyperlegible](https://atkinsonhyperlegiblefont.com/) — low-vision reading face
+- [Source Sans 3](https://github.com/adobe-fonts/source-sans)

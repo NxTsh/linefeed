@@ -1,7 +1,11 @@
-# CLAUDE.md — agent context for linefeed-nxt
+# CLAUDE.md — agent context for Linefeed
 
-Clean-room rewrite of the Linefeed teleprompter (see sibling repo `../linefeed`).
-Same stack: Rust workspace + Tauri v2 + plain TS/Vite. pt-BR-first. Apache-2.0.
+THE Linefeed teleprompter repo (GitHub: NxTsh/linefeed). This codebase is a
+from-scratch rewrite that replaced the first implementation; the retired
+original lives at `../linefeed-legacy` (never edit it — it only serves as a
+reference and hosts dev-only assets like spike models and the brand
+workspace). Stack: Rust workspace + Tauri v2 + plain TS/Vite. pt-BR-first
+with an English model. Apache-2.0.
 
 ## Layout
 

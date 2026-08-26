@@ -5,7 +5,7 @@
 # It points pkg-config at a local .deb-extracted sysroot. Resolution order:
 #   1. $LINEFEED_SYSROOT
 #   2. ./.webkit-sysroot            (this repo, once fetched)
-#   3. ../linefeed/app/.webkit-sysroot  (the sibling first-implementation repo)
+#   3. ../linefeed-legacy/app/.webkit-sysroot  (the retired first implementation)
 #
 # CI runners install real dev packages via apt instead and never need this.
 #
@@ -20,7 +20,7 @@ fi
 _lf_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 _lf_sysroot=""
-for cand in "${LINEFEED_SYSROOT:-}" "$_lf_root/.webkit-sysroot" "$_lf_root/../linefeed/app/.webkit-sysroot"; do
+for cand in "${LINEFEED_SYSROOT:-}" "$_lf_root/.webkit-sysroot" "$_lf_root/../linefeed-legacy/app/.webkit-sysroot"; do
     if [ -n "$cand" ] && [ -f "$cand/usr/lib/x86_64-linux-gnu/pkgconfig/alsa.pc" ]; then
         _lf_sysroot="$cand"
         break
