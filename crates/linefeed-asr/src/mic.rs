@@ -138,14 +138,8 @@ impl Pipeline {
         } else {
             // ~20 ms input chunks.
             let chunk = (device_rate as usize / 50).max(64);
-            let r = FftFixedIn::<f32>::new(
-                device_rate as usize,
-                TARGET_RATE as usize,
-                chunk,
-                4,
-                1,
-            )
-            .map_err(|e| Error::Audio(format!("resampler init: {e}")))?;
+            let r = FftFixedIn::<f32>::new(device_rate as usize, TARGET_RATE as usize, chunk, 4, 1)
+                .map_err(|e| Error::Audio(format!("resampler init: {e}")))?;
             (Some(r), chunk)
         };
         let out_max = resampler
@@ -218,20 +212,16 @@ impl Pipeline {
             self.in_buf[0].clear();
             self.in_buf[0].extend_from_slice(&self.staging);
             self.staging.clear();
-            if let Ok((_, n_out)) = resampler.process_partial_into_buffer(
-                Some(&self.in_buf),
-                &mut self.out_buf,
-                None,
-            ) {
+            if let Ok((_, n_out)) =
+                resampler.process_partial_into_buffer(Some(&self.in_buf), &mut self.out_buf, None)
+            {
                 out.extend_from_slice(&self.out_buf[0][..n_out]);
             }
         }
         for _ in 0..2 {
-            if let Ok((_, n_out)) = resampler.process_partial_into_buffer(
-                None::<&[Vec<f32>]>,
-                &mut self.out_buf,
-                None,
-            ) {
+            if let Ok((_, n_out)) =
+                resampler.process_partial_into_buffer(None::<&[Vec<f32>]>, &mut self.out_buf, None)
+            {
                 out.extend_from_slice(&self.out_buf[0][..n_out]);
             }
         }

@@ -3,8 +3,8 @@
 use anyhow::{bail, Context, Result};
 
 pub fn read_mono_16k(path: &std::path::Path) -> Result<Vec<f32>> {
-    let reader = hound::WavReader::open(path)
-        .with_context(|| format!("open wav {}", path.display()))?;
+    let reader =
+        hound::WavReader::open(path).with_context(|| format!("open wav {}", path.display()))?;
     let spec = reader.spec();
     if spec.channels != 1 {
         bail!(

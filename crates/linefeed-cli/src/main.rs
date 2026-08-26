@@ -57,8 +57,8 @@ fn run(cmd: Command) -> Result<()> {
 }
 
 fn load_script(path: &Path) -> Result<Script> {
-    let text = std::fs::read_to_string(path)
-        .with_context(|| format!("read script {}", path.display()))?;
+    let text =
+        std::fs::read_to_string(path).with_context(|| format!("read script {}", path.display()))?;
     let script = Script::parse(&text);
     if script.n_tokens() == 0 {
         bail!("{}: script has no words", path.display());
@@ -67,14 +67,11 @@ fn load_script(path: &Path) -> Result<Script> {
 }
 
 fn engine_config(opts: &EngineOpts) -> EngineConfig {
-    let model_dir = opts
-        .model_dir
-        .clone()
-        .unwrap_or_else(|| {
-            linefeed_asr::default_model_dir(&opts.engine)
-                .to_string_lossy()
-                .into_owned()
-        });
+    let model_dir = opts.model_dir.clone().unwrap_or_else(|| {
+        linefeed_asr::default_model_dir(&opts.engine)
+            .to_string_lossy()
+            .into_owned()
+    });
     EngineConfig {
         model_dir,
         num_threads: opts
@@ -223,9 +220,7 @@ fn live(
     let mut closed = false;
     while !stop.load(Ordering::SeqCst) {
         match mic.read(Duration::from_millis(250)) {
-            Chunk::Samples(samples) => {
-                pump(engine.as_mut(), &mut tracker, &mut dump, &samples)?
-            }
+            Chunk::Samples(samples) => pump(engine.as_mut(), &mut tracker, &mut dump, &samples)?,
             Chunk::Timeout => continue,
             Chunk::Closed => {
                 closed = true;

@@ -1,0 +1,311 @@
+/* linefeed — dark theme only. Palette is brand law:
+   bg #0A0A0A · surface #16161A · text #E8E3D9 · accent #22D3EE
+   status green/amber/red are semantic — never reassigned. */
+
+:root {
+  --bg: #0a0a0a;
+  --surface: #16161a;
+  --text: #e8e3d9;
+  --accent: #22d3ee;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --muted: #6b7280;
+  --mono: "SauceCodePro NF", ui-monospace, monospace;
+}
+
+@font-face {
+  font-family: "SauceCodePro NF";
+  src: url("./assets/fonts/SauceCodeProNerdFont-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "SauceCodePro NF";
+  src: url("./assets/fonts/SauceCodeProNerdFont-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("./assets/fonts/inter-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("./assets/fonts/atkinson-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("./assets/fonts/atkinson-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("./assets/fonts/source-sans-3-var.woff2") format("woff2");
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  user-select: none;
+}
+
+/* ------------------------------------------------------------- stage/zone */
+
+#stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#zone {
+  position: relative;
+  overflow: hidden;
+  /* width/height set inline from config (percent of stage) */
+}
+
+#column {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  will-change: transform;
+  font-family: "Inter", sans-serif; /* overridden inline from config */
+  line-height: 1.45;
+  padding-bottom: 60vh; /* end-of-script grace */
+}
+
+#anchor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  pointer-events: none;
+  z-index: 2;
+  /* top set from the COMPUTED adaptive anchor — never hard-coded */
+}
+
+#row-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-left: 3px solid var(--accent);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+#column .paragraph {
+  margin-bottom: 0.9em;
+}
+
+#column .word {
+  display: inline;
+}
+
+#column .word.read {
+  opacity: 0.45;
+}
+
+#column .word.current {
+  color: var(--accent);
+}
+
+#empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 2;
+}
+#empty kbd {
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+#empty.hidden {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- overlay */
+
+#controls {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid #26262c;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  z-index: 50;
+  transition: opacity 200ms ease;
+  flex-wrap: wrap;
+  max-width: min(96vw, 1100px);
+  justify-content: center;
+}
+
+#controls.faded {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#controls .group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#controls .sep {
+  width: 1px;
+  height: 18px;
+  background: #26262c;
+}
+
+#controls button,
+#controls select {
+  font: inherit;
+  font-family: var(--mono);
+  color: var(--text);
+  background: transparent;
+  border: 1px solid #2e2e35;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+#controls button:hover {
+  border-color: var(--accent);
+}
+
+#controls button.on {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+#controls .value {
+  min-width: 44px;
+  text-align: center;
+  color: var(--muted);
+}
+
+#controls .hidden {
+  display: none;
+}
+
+/* --------------------------------------------------------------- pill/hud */
+
+#pill {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid #26262c;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  z-index: 50;
+  transition: opacity 200ms ease;
+}
+
+#pill .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+#pill.tracking .dot { background: var(--ok); }
+#pill.holding .dot { background: var(--warn); }
+#pill.lost .dot { background: var(--bad); }
+#pill.backtrack .dot { background: var(--accent); }
+
+#posbar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 2px;
+  width: 0;
+  background: var(--accent);
+  z-index: 60;
+  transition: width 200ms linear;
+}
+
+#hud {
+  position: fixed;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  border: 1px solid #26262c;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  z-index: 70;
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+}
+#hud.show {
+  opacity: 1;
+}
+
+#banner {
+  position: fixed;
+  left: 50%;
+  top: 48px;
+  transform: translateX(-50%);
+  color: var(--warn);
+  font-size: 12px;
+  z-index: 60;
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+}
+#banner.show {
+  opacity: 1;
+}
+
+/* Presentation mode: chrome-off hides every overlay; the pill dot stays
+   readable at half strength so LOST is never invisible. */
+body.chrome-off #controls,
+body.chrome-off #posbar,
+body.chrome-off #banner {
+  opacity: 0;
+  pointer-events: none;
+}
+body.chrome-off #pill {
+  opacity: 0.5;
+}
+body.chrome-off #pill .label {
+  display: none;
+}

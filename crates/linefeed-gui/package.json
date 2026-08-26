@@ -1,0 +1,23 @@
+{
+  "name": "linefeed-gui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "node --test --experimental-strip-types \"tests/*.test.ts\"",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^26.3.0",
+    "typescript": "^5.6",
+    "vite": "^6"
+  }
+}

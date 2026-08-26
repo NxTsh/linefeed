@@ -106,7 +106,6 @@ impl Shared {
         let _ = app.emit(EV_CONFIG, cfg.clone());
         cfg
     }
-
 }
 
 type AppState<'a> = tauri::State<'a, Arc<Shared>>;

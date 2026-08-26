@@ -28,7 +28,11 @@ impl DiagLog {
             .unwrap_or_else(std::env::temp_dir);
         let path = dir.join(format!("linefeed-diag-{epoch}.jsonl"));
         let file = std::fs::File::create(&path)
-            .or_else(|_| std::fs::File::create(std::env::temp_dir().join(format!("linefeed-diag-{epoch}.jsonl"))))
+            .or_else(|_| {
+                std::fs::File::create(
+                    std::env::temp_dir().join(format!("linefeed-diag-{epoch}.jsonl")),
+                )
+            })
             .ok()?;
         let mut log = DiagLog {
             out: std::io::BufWriter::new(file),

@@ -139,7 +139,12 @@ fn run_fetch(models_dir: &Path, cancel: &AtomicBool, tx: &mpsc::Sender<ModelFetc
     if verify_model(&install_dir) {
         emit(
             tx,
-            ModelFetchEvent::phase("ready", EXPECTED_BYTES, EXPECTED_BYTES, "model already installed".into()),
+            ModelFetchEvent::phase(
+                "ready",
+                EXPECTED_BYTES,
+                EXPECTED_BYTES,
+                "model already installed".into(),
+            ),
         );
         return;
     }
@@ -148,18 +153,31 @@ fn run_fetch(models_dir: &Path, cancel: &AtomicBool, tx: &mpsc::Sender<ModelFetc
             Ok(()) => {
                 emit(
                     tx,
-                    ModelFetchEvent::phase("ready", EXPECTED_BYTES, EXPECTED_BYTES, "model installed".into()),
+                    ModelFetchEvent::phase(
+                        "ready",
+                        EXPECTED_BYTES,
+                        EXPECTED_BYTES,
+                        "model installed".into(),
+                    ),
                 );
                 return;
             }
             Err(FetchError::Cancelled) => {
-                emit(tx, ModelFetchEvent::phase("cancelled", 0, 0, "download cancelled".into()));
+                emit(
+                    tx,
+                    ModelFetchEvent::phase("cancelled", 0, 0, "download cancelled".into()),
+                );
                 return;
             }
             Err(FetchError::Failed(msg)) if attempt == 1 => {
                 emit(
                     tx,
-                    ModelFetchEvent::phase("retrying", 0, EXPECTED_BYTES, format!("{msg} — retrying")),
+                    ModelFetchEvent::phase(
+                        "retrying",
+                        0,
+                        EXPECTED_BYTES,
+                        format!("{msg} — retrying"),
+                    ),
                 );
             }
             Err(FetchError::Failed(msg)) => {
@@ -206,7 +224,12 @@ fn fetch_once(
 
     emit(
         tx,
-        ModelFetchEvent::phase("extracting", EXPECTED_BYTES, EXPECTED_BYTES, "extracting model…".into()),
+        ModelFetchEvent::phase(
+            "extracting",
+            EXPECTED_BYTES,
+            EXPECTED_BYTES,
+            "extracting model…".into(),
+        ),
     );
     extract_tarbz2(&part, &staging).map_err(|e| {
         let _ = std::fs::remove_file(&part);
@@ -249,12 +272,16 @@ fn stream_to_file(
     let mut reader = resp.into_reader();
     let mut file = std::io::BufWriter::with_capacity(
         256 * 1024,
-        std::fs::File::create(dest).map_err(|e| FetchError::Failed(format!("create {}: {e}", dest.display())))?,
+        std::fs::File::create(dest)
+            .map_err(|e| FetchError::Failed(format!("create {}: {e}", dest.display())))?,
     );
     let mut buf = vec![0u8; 256 * 1024];
     let mut downloaded = 0u64;
     let mut last_report = 0u64;
-    emit(tx, ModelFetchEvent::phase("downloading", 0, total, "downloading model…".into()));
+    emit(
+        tx,
+        ModelFetchEvent::phase("downloading", 0, total, "downloading model…".into()),
+    );
     loop {
         if cancel.load(Ordering::SeqCst) {
             return Err(FetchError::Cancelled);
@@ -276,7 +303,11 @@ fn stream_to_file(
                     "downloading",
                     downloaded,
                     total,
-                    format!("{} / {} MB", downloaded / (1024 * 1024), total / (1024 * 1024)),
+                    format!(
+                        "{} / {} MB",
+                        downloaded / (1024 * 1024),
+                        total / (1024 * 1024)
+                    ),
                 ),
             );
         }
@@ -302,7 +333,8 @@ fn extract_tarbz2(archive: &Path, staging: &Path) -> Result<(), String> {
         }
         let dest = staging.join(&path);
         if let Some(parent) = dest.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| format!("create {}: {e}", parent.display()))?;
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("create {}: {e}", parent.display()))?;
         }
         entry
             .unpack(&dest)
@@ -361,12 +393,21 @@ mod tests {
     #[test]
     fn archive_allow_list() {
         let top = "model-dir";
-        assert!(archive_entry_ok(Path::new("model-dir/model.int8.onnx"), top));
+        assert!(archive_entry_ok(
+            Path::new("model-dir/model.int8.onnx"),
+            top
+        ));
         assert!(archive_entry_ok(Path::new("model-dir/sub/tokens.txt"), top));
         assert!(!archive_entry_ok(Path::new("other-dir/x"), top));
-        assert!(!archive_entry_ok(Path::new("model-dir/../../etc/passwd"), top));
+        assert!(!archive_entry_ok(
+            Path::new("model-dir/../../etc/passwd"),
+            top
+        ));
         assert!(!archive_entry_ok(Path::new("/abs/path"), top));
-        assert!(!archive_entry_ok(Path::new("model-dir"), top) || true, "top dir itself is fine either way");
+        assert!(
+            !archive_entry_ok(Path::new("model-dir"), top) || true,
+            "top dir itself is fine either way"
+        );
         assert!(!archive_entry_ok(Path::new(""), top));
     }
 
@@ -431,7 +472,8 @@ mod tests {
             header.set_size(1);
             header.set_mode(0o644);
             header.set_cksum();
-            tar.append_data(&mut header, "evil/file", &data[..]).unwrap();
+            tar.append_data(&mut header, "evil/file", &data[..])
+                .unwrap();
             tar.into_inner().unwrap().finish().unwrap();
         }
         let err = extract_tarbz2(&bad, &base.join("staging2")).unwrap_err();

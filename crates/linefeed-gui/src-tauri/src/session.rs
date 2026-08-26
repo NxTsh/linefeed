@@ -146,14 +146,28 @@ fn run_session(
                         log.mic_rms(t, v);
                     }
                 }
-                feed(app, &mut *engine, &mut tracker, &mut diag, &mut last_words, &samples)?;
+                feed(
+                    app,
+                    &mut *engine,
+                    &mut tracker,
+                    &mut diag,
+                    &mut last_words,
+                    &samples,
+                )?;
             }
         }
     }
 
     let tail = mic.finish();
     if !tail.is_empty() {
-        feed(app, &mut *engine, &mut tracker, &mut diag, &mut last_words, &tail)?;
+        feed(
+            app,
+            &mut *engine,
+            &mut tracker,
+            &mut diag,
+            &mut last_words,
+            &tail,
+        )?;
     }
     for hyp in engine.flush().map_err(|e| e.to_string())? {
         deliver(app, &mut tracker, &mut diag, &mut last_words, &hyp);

@@ -62,10 +62,7 @@ pub enum Command {
     Help,
 }
 
-fn take_value(
-    it: &mut std::slice::Iter<'_, String>,
-    flag: &str,
-) -> Result<String, String> {
+fn take_value(it: &mut std::slice::Iter<'_, String>, flag: &str) -> Result<String, String> {
     it.next()
         .cloned()
         .ok_or_else(|| format!("{flag} needs a value"))
@@ -96,18 +93,14 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
         match a.as_str() {
             "-h" | "--help" => return Ok(Command::Help),
             "--wav" => wav = Some(PathBuf::from(take_value(&mut it, "--wav")?)),
-            "--timeline" => {
-                timeline = Some(PathBuf::from(take_value(&mut it, "--timeline")?))
-            }
+            "--timeline" => timeline = Some(PathBuf::from(take_value(&mut it, "--timeline")?)),
             "--out" => out = Some(PathBuf::from(take_value(&mut it, "--out")?)),
             "--dump-timeline" => {
                 dump = Some(PathBuf::from(take_value(&mut it, "--dump-timeline")?))
             }
             "--engine" => opts.engine = take_value(&mut it, "--engine")?,
             "--model-dir" => opts.model_dir = Some(take_value(&mut it, "--model-dir")?),
-            "--input-device" => {
-                input_device = Some(take_value(&mut it, "--input-device")?)
-            }
+            "--input-device" => input_device = Some(take_value(&mut it, "--input-device")?),
             "--threads" => {
                 let v = take_value(&mut it, "--threads")?;
                 let n: i32 = v
@@ -187,7 +180,10 @@ mod tests {
 
     #[test]
     fn replay_wav() {
-        let c = parse(&args(&["replay", "s.txt", "--wav", "f.wav", "--engine", "sherpa"])).unwrap();
+        let c = parse(&args(&[
+            "replay", "s.txt", "--wav", "f.wav", "--engine", "sherpa",
+        ]))
+        .unwrap();
         match c {
             Command::Replay {
                 script,
@@ -227,10 +223,7 @@ mod tests {
     #[test]
     fn replay_requires_exactly_one_source() {
         assert!(parse(&args(&["replay", "s.txt"])).is_err());
-        assert!(parse(&args(&[
-            "replay", "s.txt", "--wav", "a", "--timeline", "b"
-        ]))
-        .is_err());
+        assert!(parse(&args(&["replay", "s.txt", "--wav", "a", "--timeline", "b"])).is_err());
     }
 
     #[test]

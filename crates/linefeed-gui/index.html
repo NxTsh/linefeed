@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>linefeed</title>
+    <style>
+      /* Splash chrome is inline so the first paint is already correct. */
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: #0a0a0a;
+        color: #e8e3d9;
+        font-family: ui-monospace, "SauceCodePro NF", monospace;
+        transition: opacity 300ms ease;
+      }
+      #splash.fading { opacity: 0; }
+      #splash.gone { display: none; }
+      #splash .mark { width: 96px; height: 96px; }
+      #splash .wordmark {
+        font-size: 28px;
+        letter-spacing: 0.08em;
+        color: #e8e3d9;
+      }
+      #splash .wordmark b { color: #22d3ee; font-weight: inherit; }
+      #splash .phase { font-size: 13px; opacity: 0.7; min-height: 1.2em; }
+      #splash .error-box, #splash .fetch-box {
+        max-width: 560px;
+        border: 1px solid #16161a;
+        background: #16161a;
+        border-radius: 8px;
+        padding: 14px 18px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      #splash .error-box { border-color: #7f1d1d; }
+      #splash .fetch-box .bar {
+        height: 6px;
+        background: #0a0a0a;
+        border-radius: 3px;
+        overflow: hidden;
+        margin: 10px 0 6px;
+      }
+      #splash .fetch-box .bar > div {
+        height: 100%;
+        width: 0;
+        background: #22d3ee;
+        transition: width 200ms linear;
+      }
+      #splash .actions { margin-top: 8px; display: flex; gap: 10px; }
+      #splash button {
+        font: inherit;
+        color: #0a0a0a;
+        background: #22d3ee;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 14px;
+        cursor: pointer;
+      }
+      #splash button.ghost {
+        background: transparent;
+        color: #e8e3d9;
+        border: 1px solid #3f3f46;
+      }
+      #splash code {
+        display: block;
+        margin-top: 8px;
+        padding: 8px;
+        background: #0a0a0a;
+        border-radius: 6px;
+        font-size: 12px;
+        user-select: all;
+        overflow-wrap: anywhere;
+      }
+      #splash .hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="splash">
+      <svg class="mark" viewBox="0 0 512 512" aria-label="linefeed keycap">
+        <rect x="64" y="64" width="384" height="384" rx="72" fill="#1e1e24" />
+        <rect x="88" y="80" width="336" height="336" rx="56" fill="#121217" />
+        <g fill="#22d3ee">
+          <rect x="236" y="160" width="40" height="150" rx="8" />
+          <rect x="236" y="270" width="40" height="40" rx="8" transform="rotate(0 256 290)" />
+          <path d="M256 352 L196 292 L224 264 L256 296 L288 264 L316 292 Z" />
+        </g>
+      </svg>
+      <div class="wordmark">line<b>feed</b></div>
+      <div class="phase" id="splash-phase">starting…</div>
+      <div class="fetch-box hidden" id="fetch-box">
+        <div id="fetch-msg">
+          The pt-BR speech model (~131 MB) is not installed. Download it now?
+          Voice-following needs it; dumb scroll works without it.
+        </div>
+        <div class="bar"><div id="fetch-bar"></div></div>
+        <div class="phase" id="fetch-status"></div>
+        <code class="hidden" id="fetch-curl"></code>
+        <div class="actions">
+          <button id="fetch-accept">Download (Enter)</button>
+          <button class="ghost" id="fetch-decline">Not now (Esc)</button>
+        </div>
+      </div>
+      <div class="error-box hidden" id="error-box">
+        <div id="error-msg"></div>
+        <div class="actions">
+          <button class="ghost" id="error-continue">Continue anyway</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="stage">
+      <div id="zone">
+        <div id="anchor"></div>
+        <div id="column"></div>
+        <div id="row-bar"></div>
+      </div>
+      <div id="empty">
+        <p>No script loaded.</p>
+        <p><kbd>Cmd/Ctrl+O</kbd> to open a .txt or .md file.</p>
+      </div>
+    </div>
+
+    <div id="hud"></div>
+    <div id="controls-root"></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

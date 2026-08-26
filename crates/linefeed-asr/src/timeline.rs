@@ -103,7 +103,11 @@ mod tests {
                 t: 1.0,
             })
             .unwrap();
-            w.write(&Hypothesis { words: vec![], t: 2.0 }).unwrap();
+            w.write(&Hypothesis {
+                words: vec![],
+                t: 2.0,
+            })
+            .unwrap();
         }
         let mut r = TimelineReplay::from_path(&path).unwrap();
         assert_eq!(r.remaining(), 2);

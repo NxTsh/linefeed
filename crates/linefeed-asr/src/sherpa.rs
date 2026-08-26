@@ -18,8 +18,7 @@
 
 use crate::engine::{AsrEngine, EngineConfig, Error, Hypothesis, Word};
 use sherpa_onnx::{
-    OfflineModelConfig, OfflineNemoEncDecCtcModelConfig, OfflineRecognizer,
-    OfflineRecognizerConfig,
+    OfflineModelConfig, OfflineNemoEncDecCtcModelConfig, OfflineRecognizer, OfflineRecognizerConfig,
 };
 
 /// Seconds between re-decodes. Cost scales ~1/hop; ~0.22 RTF-equivalent at
@@ -97,7 +96,11 @@ impl SherpaEngine {
         let result = stream
             .get_result()
             .ok_or_else(|| Error::Engine("sherpa decode: no result".into()))?;
-        Ok(rebuild_words(&result.tokens, result.timestamps.as_deref(), t0))
+        Ok(rebuild_words(
+            &result.tokens,
+            result.timestamps.as_deref(),
+            t0,
+        ))
     }
 
     fn maybe_emit(&mut self) -> Result<Vec<Hypothesis>, Error> {
@@ -267,7 +270,10 @@ mod tests {
             n_words += h.words.len();
         }
         eprintln!("sherpa: {n_hyps} hypotheses, {n_words} word-observations");
-        assert!(n_hyps >= 10, "expected ~1 hypothesis per second, got {n_hyps}");
+        assert!(
+            n_hyps >= 10,
+            "expected ~1 hypothesis per second, got {n_hyps}"
+        );
         assert!(n_words > 0, "expected word observations");
     }
 }
