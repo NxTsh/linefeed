@@ -5,6 +5,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: Se
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.0] - 2026-08-26
+
 Clean-room rewrite of the original Linefeed repo, carrying over the
 validated algorithm design and brand/UX decisions while fixing the first
 implementation's surveyed design flaws at the architecture level.
