@@ -8,6 +8,14 @@
 #   3. ../linefeed/app/.webkit-sysroot  (the sibling first-implementation repo)
 #
 # CI runners install real dev packages via apt instead and never need this.
+#
+# macOS needs NONE of this (CoreAudio + WKWebView are system frameworks):
+# sourcing here is a clean no-op.
+
+if [ "$(uname -s)" = "Darwin" ]; then
+    echo "dev-env: macOS — no sysroot needed, nothing to do" >&2
+    return 0 2>/dev/null || exit 0
+fi
 
 _lf_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
