@@ -203,6 +203,12 @@ async function main(): Promise<void> {
     setPhase("engine-ready");
     if (probe && shouldOfferFetch(probe)) {
       fetchState = "offer";
+      // Show the exact install dir so an env-var mismatch (download went
+      // to a different models dir than the one being probed) is visible.
+      el("fetch-msg").textContent =
+        `The pt-BR speech model (~131 MB) is not installed in ` +
+        `${probe.models_dir}. Download it now? Voice-following needs it; ` +
+        `dumb scroll works without it.`;
       fetchBox.classList.remove("hidden");
     } else if (probe && !probe.models_ok && !probe.fetchable) {
       splashError = true;
