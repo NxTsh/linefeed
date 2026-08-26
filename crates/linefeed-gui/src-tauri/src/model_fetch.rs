@@ -84,20 +84,20 @@ pub fn shell_quote(s: &str) -> String {
 
 /// Is an archive entry safe to extract into the staging dir?
 /// Requirements: relative, no `..`, single expected top-level directory.
+/// A leading `./` is tolerated — the real sherpa release tars prefix every
+/// entry with it (rejecting those made the first-run download fail with an
+/// empty install dir).
 pub fn archive_entry_ok(path: &Path, expected_top: &str) -> bool {
     use std::path::Component;
-    let mut comps = path.components();
+    let mut comps = path.components().peekable();
+    while matches!(comps.peek(), Some(Component::CurDir)) {
+        comps.next();
+    }
     match comps.next() {
         Some(Component::Normal(top)) if top == expected_top => {}
         _ => return false,
     }
-    for c in comps {
-        match c {
-            Component::Normal(_) => {}
-            _ => return false,
-        }
-    }
-    true
+    comps.all(|c| matches!(c, Component::Normal(_)))
 }
 
 pub struct FetchHandle {
@@ -404,6 +404,16 @@ mod tests {
             top
         ));
         assert!(!archive_entry_ok(Path::new("/abs/path"), top));
+        // Real sherpa release tars prefix every entry with `./` — regression
+        // from the first macOS download attempt (empty install dir).
+        assert!(archive_entry_ok(
+            Path::new("./model-dir/model.int8.onnx"),
+            top
+        ));
+        assert!(archive_entry_ok(Path::new("./model-dir/"), top));
+        assert!(!archive_entry_ok(Path::new("./other-dir/x"), top));
+        assert!(!archive_entry_ok(Path::new("./../etc/passwd"), top));
+        assert!(!archive_entry_ok(Path::new("././"), top));
         assert!(
             !archive_entry_ok(Path::new("model-dir"), top) || true,
             "top dir itself is fine either way"
@@ -449,9 +459,10 @@ mod tests {
             header.set_size(data.len() as u64);
             header.set_mode(0o644);
             header.set_cksum();
+            // `./`-prefixed like the real sherpa release archive.
             tar.append_data(
                 &mut header,
-                format!("{MODEL_DIRNAME}/tokens.txt"),
+                format!("./{MODEL_DIRNAME}/tokens.txt"),
                 &data[..],
             )
             .unwrap();
