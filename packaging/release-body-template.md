@@ -4,9 +4,17 @@ alignment run fully offline: no cloud, no accounts, no uploaded audio.
 ## Install
 
 ### macOS (Apple Silicon)
-Download the `.dmg` (or the `.app` zip), drag **linefeed** to Applications.
-The app is not code-signed yet — on first launch macOS will block it:
-**right-click the app → Open → Open** (needed once).
+Download the `.dmg` (or the `.app` zip) and drag **linefeed** to
+Applications. The app is not notarized yet (no Apple Developer ID), so
+macOS will report it as *"damaged"* on first launch. It isn't — that's
+Gatekeeper quarantining an unsigned download. Clear the flag once:
+
+```
+xattr -cr /Applications/linefeed.app
+```
+
+Then open it normally. (Right-click → Open does NOT work for unsigned
+apps on Apple Silicon — the `xattr` command is the way.)
 
 ### Linux (x86_64)
 - Debian/Ubuntu: `sudo apt install ./linefeed_*.deb`
