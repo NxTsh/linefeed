@@ -64,7 +64,26 @@ Both install from the app (settings panel → Voice model) into the platform
 data dir (`LINEFEED_MODELS_DIR` overrides). The registry lives in
 [`crates/linefeed-asr/src/models.rs`](crates/linefeed-asr/src/models.rs).
 
-## Quickstart
+## Install
+
+### Homebrew (macOS Apple Silicon · Linux CLI)
+
+```bash
+brew install --cask caiodelgadonew/tap/linefeed   # the app (macOS arm64)
+brew install caiodelgadonew/tap/linefeed-cli      # the CLI (macOS arm64 / Linux x86_64)
+```
+
+The app is not notarized yet; the cask clears the Gatekeeper quarantine
+flag automatically after install.
+
+### Direct download
+
+Grab installers from the [latest release](https://github.com/NxTsh/linefeed/releases/latest):
+macOS `.dmg`, Linux `.deb` / `.AppImage`, Windows `.msi` (experimental),
+plus standalone CLI archives. On macOS, clear the quarantine flag once:
+`xattr -cr /Applications/linefeed.app`.
+
+## Building from source
 
 ### GUI (Tauri)
 
