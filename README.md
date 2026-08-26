@@ -51,7 +51,12 @@ first run.
 
 ## Status
 
-Rewrite in progress. See `CHANGELOG.md` for milestone history.
+All six rewrite milestones are implemented: core, ASR, CLI, GUI backend,
+GUI frontend, CI. The alignment pipeline is E2E-validated against the first
+repo's recorded pt-BR takes (100% final cursor on clean, noisy, ad-lib and
+skip-around fixtures). Live-mic behavior needs real-hardware validation, and
+release packaging (installers, Homebrew) has not been ported yet. See
+`CHANGELOG.md` for details.
 
 ## License
 
