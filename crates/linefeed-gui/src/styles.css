@@ -228,6 +228,17 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+#controls button.iconbtn {
+  padding: 5px 7px;
+  line-height: 0;
+}
+
+#controls .icon {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
 #controls .hidden {
   display: none;
 }

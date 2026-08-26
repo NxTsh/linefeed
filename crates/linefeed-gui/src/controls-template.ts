@@ -26,9 +26,15 @@ export const CONTROLS_TEMPLATE = `
   <div class="sep"></div>
   <div class="group">
     <button data-c="resume" class="hidden" title="Resume follow (f)">follow</button>
-    <button data-c="fullscreen" title="Fullscreen (F11 / Cmd+F)">⛶</button>
-    <button data-c="present" title="Presentation mode (h)">👁</button>
-    <button data-c="settings" title="Settings">⚙</button>
+    <button data-c="fullscreen" class="iconbtn" title="Fullscreen (F11 / Cmd+F)">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+    </button>
+    <button data-c="present" class="iconbtn" title="Presentation mode — hide all chrome (h)">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <button data-c="settings" class="iconbtn" title="Settings">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="9.5" cy="7" r="2.6" fill="var(--bg, #0a0a0a)"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="14.5" cy="17" r="2.6" fill="var(--bg, #0a0a0a)"/></svg>
+    </button>
   </div>
 </div>
 

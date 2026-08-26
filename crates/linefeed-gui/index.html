@@ -83,13 +83,27 @@
   </head>
   <body>
     <div id="splash">
+      <!-- The brand keycap mark (canonical, from assets/icon.svg): an LF
+           legend with the linefeed underline bar. -->
       <svg class="mark" viewBox="0 0 512 512" aria-label="linefeed keycap">
-        <rect x="64" y="64" width="384" height="384" rx="72" fill="#1e1e24" />
-        <rect x="88" y="80" width="336" height="336" rx="56" fill="#121217" />
-        <g fill="#22d3ee">
-          <rect x="236" y="160" width="40" height="150" rx="8" />
-          <rect x="236" y="270" width="40" height="40" rx="8" transform="rotate(0 256 290)" />
-          <path d="M256 352 L196 292 L224 264 L256 296 L288 264 L316 292 Z" />
+        <defs>
+          <radialGradient id="splash-keycap-pbt" cx="50%" cy="42%" r="75%">
+            <stop offset="0%" stop-color="#1E1E24" />
+            <stop offset="100%" stop-color="#121217" />
+          </radialGradient>
+        </defs>
+        <rect width="512" height="512" fill="#0A0A0A" />
+        <rect x="96" y="86" width="320" height="320" rx="64" fill="url(#splash-keycap-pbt)" stroke="#232329" stroke-width="2" />
+        <g fill="#22D3EE">
+          <!-- L -->
+          <rect x="178" y="158" width="26" height="130" />
+          <rect x="178" y="262" width="70" height="26" />
+          <!-- F -->
+          <rect x="268" y="158" width="26" height="130" />
+          <rect x="268" y="158" width="70" height="26" />
+          <rect x="268" y="220" width="55" height="26" />
+          <!-- underline: the ␊ bar joining the letters -->
+          <rect x="178" y="318" width="160" height="16" rx="8" />
         </g>
       </svg>
       <div class="wordmark">line<b>feed</b></div>
