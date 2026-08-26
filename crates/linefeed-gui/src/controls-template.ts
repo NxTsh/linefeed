@@ -10,6 +10,7 @@ export const CONTROLS_TEMPLATE = `
   <div class="sep"></div>
   <div class="group">
     <button data-c="mode" title="Toggle voice / dumb scroll">voice</button>
+    <select data-c="device" title="Input device (empty = system default)"></select>
     <button data-c="start" title="Start listening">Listen</button>
     <button data-c="play" class="hidden" title="Play/pause (Space)">▶</button>
     <span  data-c="wpm-group" class="hidden">

@@ -56,6 +56,9 @@ export class Controls {
     this.el("start").addEventListener("click", () => {
       void api.start();
     });
+    this.el<HTMLSelectElement>("device").addEventListener("change", (e) => {
+      void api.setDevice((e.target as HTMLSelectElement).value);
+    });
     this.el("play").addEventListener("click", () => {
       void api.dumbPlay(!this.playing);
     });
@@ -108,6 +111,27 @@ export class Controls {
     void api.setLead(lines);
   }
 
+  /** (Re)populate the input-device dropdown; keeps the persisted choice
+   * selected and falls back to system default when it disappeared. */
+  async refreshDevices(): Promise<void> {
+    const list = await api.listDevices().catch(() => null);
+    const sel = this.el<HTMLSelectElement>("device");
+    const want = this.cfg?.device ?? "";
+    sel.textContent = "";
+    const def = document.createElement("option");
+    def.value = "";
+    def.textContent = "default mic";
+    sel.appendChild(def);
+    for (const d of list ?? []) {
+      const opt = document.createElement("option");
+      opt.value = d.name;
+      opt.textContent = d.default ? `${d.name} ✓` : d.name;
+      sel.appendChild(opt);
+    }
+    sel.value = want;
+    if (sel.value !== want) sel.value = "";
+  }
+
   applyConfig(cfg: GuiConfig): void {
     this.cfg = cfg;
     this.el("mode").textContent = cfg.scroll_mode;
@@ -121,16 +145,25 @@ export class Controls {
     this.el("wpm-group").classList.toggle("hidden", !dumb);
     this.el("play").classList.toggle("hidden", !dumb);
     this.el("start").classList.toggle("hidden", dumb);
+    this.el("device").classList.toggle("hidden", dumb);
+    const sel = this.el<HTMLSelectElement>("device");
+    if (sel.value !== cfg.device) sel.value = cfg.device;
   }
 
   applyStatus(status: StatusPayload): void {
     const pill = document.getElementById("pill")!;
     this.el("pill-label").textContent =
       status.state === "listening" ? "listening" : status.state;
-    if (!status.running) pill.className = "";
+    // The message (model path, device failure…) is readable on hover.
+    pill.title = status.message;
+    if (!status.running) {
+      pill.className = status.state === "error" ? "error" : "";
+    }
     this.el("start").textContent = status.running ? "Stop" : "Listen";
     const startBtn = this.el("start");
     startBtn.onclick = () => void (status.running ? api.stop() : api.start());
+    // Device changes need a session restart; disable the picker while live.
+    this.el<HTMLSelectElement>("device").disabled = status.running;
   }
 
   applyTrack(state: TrackState): void {

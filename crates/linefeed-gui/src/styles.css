@@ -248,6 +248,7 @@ body {
 #pill.holding .dot { background: var(--warn); }
 #pill.lost .dot { background: var(--bad); }
 #pill.backtrack .dot { background: var(--accent); }
+#pill.error .dot { background: var(--bad); }
 
 #posbar {
   position: fixed;

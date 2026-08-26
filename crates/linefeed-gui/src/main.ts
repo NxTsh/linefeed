@@ -122,11 +122,20 @@ async function main(): Promise<void> {
   });
   onStatus((s) => {
     controls.applyStatus(s);
-    if (s.state === "error" && !scriptLoaded) {
-      // Pre-script engine errors surface on the splash.
-      splashError = true;
-      el("error-msg").textContent = s.message;
-      el("error-box").classList.remove("hidden");
+    if (s.state === "error") {
+      if (scriptLoaded) {
+        // Post-boot errors get a readable toast, not just a red dot.
+        hud(`error: ${s.message}`, 6000);
+      } else {
+        // Pre-script engine errors surface on the splash.
+        splashError = true;
+        el("error-msg").textContent = s.message;
+        el("error-box").classList.remove("hidden");
+      }
+    }
+    if (s.state === "stopped" || s.state === "error") {
+      // Devices may have changed (unplugged interface, new permission).
+      void controls.refreshDevices();
     }
   });
   onTracker((ev) => {
@@ -190,6 +199,7 @@ async function main(): Promise<void> {
       view.applyConfig(cfg);
       controls.applyConfig(cfg);
     }
+    void controls.refreshDevices();
     setPhase("engine-ready");
     if (probe && shouldOfferFetch(probe)) {
       fetchState = "offer";
