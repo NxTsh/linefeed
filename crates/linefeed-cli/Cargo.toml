@@ -1,0 +1,23 @@
+[package]
+name = "linefeed-cli"
+description = "linefeed CLI: deterministic replay, live microphone tracking, device listing, timeline dumps."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "linefeed"
+path = "src/main.rs"
+
+[features]
+default = ["sherpa", "mic"]
+sherpa = ["linefeed-asr/sherpa"]
+mic = ["linefeed-asr/mic"]
+
+[dependencies]
+linefeed-core = { path = "../linefeed-core" }
+linefeed-asr = { path = "../linefeed-asr" }
+anyhow = { workspace = true }
+hound = { workspace = true }
+ctrlc = "3.4"

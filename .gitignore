@@ -1,0 +1,25 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# ASR models are never committed (pointed at via LINEFEED_MODELS_DIR or the
+# platform data dir); recorded audio stays out of history too.
+models/
+*.onnx
+*.tar.bz2
+*.zip
+*.wav
+*.flac
+*.mp3
+
+# Frontend
+node_modules/
+crates/linefeed-gui/dist/
+
+# Local build plumbing (no-sudo webkit sysroot, ALSA stubs)
+/.webkit-sysroot/
+/.build-stubs/
+
+# Editor/OS noise
+.DS_Store
+._*

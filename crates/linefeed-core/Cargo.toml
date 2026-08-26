@@ -1,0 +1,18 @@
+[package]
+name = "linefeed-core"
+description = "Pure script/speech alignment for the linefeed teleprompter: normalization, banded DP matching, cursor tracking. No audio, no UI."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+# IPC payload serialization for the GUI. Kept optional so the core stays
+# zero-dependency by default; CI runs the test suite with this enabled too.
+serde = ["dep:serde"]
+
+[dependencies]
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

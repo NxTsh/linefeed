@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/linefeed-core",
+    "crates/linefeed-asr",
+    "crates/linefeed-cli",
+]
+# The GUI crate joins `members` in M4 but stays out of default-members:
+# bare `cargo build` / `cargo test` must never require webkit2gtk/GTK.
+default-members = [
+    "crates/linefeed-core",
+    "crates/linefeed-asr",
+    "crates/linefeed-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/caiodelgadonew/linefeed-nxt"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+hound = "3.5"

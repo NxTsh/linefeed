@@ -1,0 +1,25 @@
+[package]
+name = "linefeed-asr"
+description = "ASR engines and microphone capture for linefeed: AsrEngine trait, sherpa-onnx engine, timeline replay, mic pipeline."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = []
+sherpa = ["dep:sherpa-onnx"]
+mic = ["dep:cpal", "dep:rubato"]
+
+[dependencies]
+linefeed-core = { path = "../linefeed-core" }
+anyhow = { workspace = true }
+serde_json = { workspace = true }
+# sherpa-onnx must stay >= 1.13.6: the 1.13.5 osx-arm64 static bundle
+# aborts at load time.
+sherpa-onnx = { version = "1.13.6", optional = true }
+cpal = { version = "0.15", optional = true }
+rubato = { version = "0.15", optional = true }
+
+[dev-dependencies]
+hound = { workspace = true }
